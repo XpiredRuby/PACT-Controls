@@ -1,0 +1,109 @@
+# PACT Controls — Default Configuration
+#
+# All tunable parameters for the gimbal control subsystem.
+# Values marked TBD must be updated once hardware is selected/characterized.
+# Override any value in config/flight.toml for flight builds.
+#
+# Requirement traceability: each group maps to one or more REQ-CTRL-* IDs.
+ 
+# ---------------------------------------------------------------------------
+# Control Loop  (REQ-CTRL-ARCH-003)
+# ---------------------------------------------------------------------------
+[control]
+control_loop_hz = 50.0          # TBD — confirm against Jetson CPU budget (CTRL-TODO-003)
+ 
+# ---------------------------------------------------------------------------
+# LQR Gains  (REQ-CTRL-ARCH-001)
+# These are loaded by the controller at startup — NOT recomputed at runtime.
+# To change gains: edit Q/R below, run scripts/compute_gains.py, paste results
+# into lqr_K_pan and lqr_K_tilt.
+# ---------------------------------------------------------------------------
+[lqr]
+# Cost matrix diagonal [q_theta, q_theta_dot]
+# High q_theta = aggressively correct angle error; lower q_theta_dot = tolerate rate error
+lqr_Q_diag = [100.0, 1.0]
+ 
+# Input cost diagonal [r_torque]
+# Low R = allow large torque commands
+lqr_R_diag = [0.01]
+ 
+# Pre-computed K gains from DARE (shape: [K_theta, K_theta_dot])
+# These are placeholder values — regenerate with scripts/compute_gains.py
+# after setting the correct moment_of_inertia values below.
+lqr_K_pan  = [31.62, 4.47]    # TBD — recompute after hardware characterization
+lqr_K_tilt = [31.62, 4.47]    # TBD — recompute after hardware characterization
+ 
+# ---------------------------------------------------------------------------
+# Plant Model  (REQ-CTRL-ARCH-004)
+# Moments of inertia are TBD pending gimbal hardware selection.
+# ---------------------------------------------------------------------------
+[plant]
+moment_of_inertia_pan_kg_m2  = 0.01   # TBD — COBRA-HPX spec pending
+moment_of_inertia_tilt_kg_m2 = 0.01   # TBD — COBRA-HPX spec pending
+ 
+# ---------------------------------------------------------------------------
+# Kalman Filter  (REQ-CTRL-ARCH-002)
+# ---------------------------------------------------------------------------
+[kalman]
+# Process noise variance — tune to model unmodeled dynamics (vibration, flex)
+# Larger = trust model less; smaller = trust model more
+kalman_process_noise_var = 1.0e-4
+ 
+# Measurement noise variance — tune from encoder datasheet (CTRL-TODO-HAL-003)
+# Larger = trust encoder less; smaller = trust encoder more
+kalman_meas_noise_var = 0.01    # TBD — placeholder, characterize real encoder
+ 
+# ---------------------------------------------------------------------------
+# Safety Limits  (REQ-CTRL-SAFE-001, REQ-CTRL-SAFE-002, REQ-CTRL-SAFE-003)
+# ---------------------------------------------------------------------------
+[safety]
+# Hard angle limits — physical stop; crossing triggers SAFE mode (REQ-CTRL-SAFE-001)
+# Confirm actual mechanical stops with hardware team (CTRL-TODO-SAFE-001)
+hard_pan_limit_deg  = 180.0   # ± degrees from center
+hard_tilt_min_deg   = -90.0   # degrees
+hard_tilt_max_deg   =  90.0   # degrees
+ 
+# Soft limit buffer — warning zone inside hard limits (no SAFE trigger, only log)
+soft_limit_buffer_deg = 5.0   # Hard limit ± this = soft limit boundary
+ 
+# Maximum slew rate in any mode (REQ-CTRL-SAFE-002)
+# Set to 0.0 to disable the gate until hardware slew limits are known (CTRL-TODO-002)
+max_slew_deg_s = 0.0           # TBD — disabled until hardware selection
+ 
+# Scan mode slew rate lock — enforced in SCAN mode only (REQ-CTRL-SAFE-003)
+scan_slew_rate_deg_per_s = 0.5  # Fixed requirement: 0.5 deg/s
+ 
+# ---------------------------------------------------------------------------
+# Fault Detection  (REQ-CTRL-FAULT-001, REQ-CTRL-FAULT-002, REQ-CTRL-FAULT-003)
+# ---------------------------------------------------------------------------
+[fault]
+# Time without a valid encoder reading before ENCODER_LOSS fault is raised
+encoder_timeout_s    = 0.5   # REQ-CTRL-FAULT-001
+ 
+# Maximum allowable control loop period before watchdog fires
+# Should be > 2x the nominal cycle period (1/control_loop_hz)
+watchdog_timeout_s   = 0.1   # REQ-CTRL-FAULT-002  (2x nominal at 50 Hz)
+ 
+# Over-temperature threshold — triggers SAFE mode  (REQ-CTRL-FAULT-003)
+# COBRA-HPX operating range: -35°C to +70°C — use conservative margin
+thermal_limit_c      = 60.0  # TBD — confirm with thermal team
+ 
+# ---------------------------------------------------------------------------
+# Mode / FSM  (REQ-CTRL-ARCH-003)
+# ---------------------------------------------------------------------------
+[modes]
+# Time without a valid NN detection before TRACKING → SCAN/IDLE transition
+scan_entry_idle_seconds = 5.0
+ 
+# ---------------------------------------------------------------------------
+# Telemetry  (REQ-CTRL-TELEM-001, REQ-CTRL-TELEM-002)
+# ---------------------------------------------------------------------------
+[telemetry]
+# How often to rotate the telemetry log file (seconds). Default ~1 ISS orbit.
+telemetry_rotation_period_s = 5400.0
+ 
+# Number of frames to buffer in memory before flushing to disk
+telemetry_buffer_frames = 100
+ 
+# How many days of log files to retain on-disk before pruning
+comm_window_days = 7
