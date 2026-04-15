@@ -1,0 +1,34 @@
+# PACT Controls — Flight Configuration Overrides
+#
+# This file overrides default.toml for flight builds.
+# Only include values that differ from default.toml.
+# All values here should be finalized before PDR/CDR.
+#
+# How it is loaded (in order, later overrides earlier):
+#   1. config/default.toml  — engineering defaults
+#   2. config/flight.toml   — flight-specific overrides  (this file)
+ 
+# ---------------------------------------------------------------------------
+# Flight overrides
+# All are currently placeholders — fill in after hardware selection and testing.
+# ---------------------------------------------------------------------------
+ 
+[control]
+# control_loop_hz = TBD  — confirm from Jetson CPU budget analysis
+ 
+[safety]
+# Tighter slew rate once hardware is characterized and tested
+# max_slew_deg_s = TBD
+ 
+# Confirmed mechanical hard stops from gimbal datasheet
+# hard_pan_limit_deg  = TBD
+# hard_tilt_min_deg   = TBD
+# hard_tilt_max_deg   = TBD
+ 
+[fault]
+# Conservative temperature limit with margin vs. COBRA-HPX max (+70°C)
+# thermal_limit_c = 55.0  # TBD — confirm with thermal team
+ 
+[telemetry]
+# Increase buffer for flight to reduce I/O frequency on shared bus
+telemetry_buffer_frames = 500
